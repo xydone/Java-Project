@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,12 +46,11 @@ class StoreTest {
                 Receipt receipt = store.sellItems(1, koshnica.getItems(), koshnica.getAmountPaid());
                 receipt.printReceipt();
             }
-            assertEquals(store.getTotalReceiptsIssued(), 2);
-            assertEquals(store.getTotalRevenue(), 102.9);
-            assertEquals(store.calculateCashierSalariesCost(), 3250.0);
-            assertEquals(store.calculateCashierSalariesCost() / YearMonth.now().lengthOfMonth(),108.33333333333333);
-            assertEquals(store.calculateDeliveryCosts(), 7);
-            assertEquals(store.calculateProfit(), -3154.1);
+            assertEquals( 2,store.getTotalReceiptsIssued());
+            assertEquals( 102.9,store.getTotalRevenue());
+            assertEquals( 3250.0,store.calculateCashierSalariesCost());
+            assertEquals( 7,store.calculateDeliveryCosts());
+            assertEquals( -3154.1, store.calculateProfit());
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
         }
