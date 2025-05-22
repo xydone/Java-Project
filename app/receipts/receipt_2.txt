@@ -1,0 +1,11 @@
+Nomer na kasova belejka: 2
+Kasier: Ivan
+Izdadena na: 2025-04-19T22:37:43.881070900
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Banan x 1 @ $0.60 = $0.60
+Konserva grah x 3 @ $3.60 = $10.80
+Pasta za zubi x 6 @ $2.75 = $16.50
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Obshto: $27.90
+Plateno: $40.00
+Resto: $12.10
