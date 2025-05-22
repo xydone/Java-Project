@@ -492,50 +492,49 @@ public class Store {
     
     System.out.println("-=-=-=-=-=-= Magazin =-=-=-=-=-=-");
     System.out.println("Vuvedete nadcenkata na hranitelni produkti (ex. 0.2):");
-    double foodMarkup = scanner.nextDouble();
+    double foodMarkup = Double.parseDouble(scanner.nextLine());
     System.out.println("Vuvedete nadcenkata na ne-hranitelni produkti (ex. 0.1):");
-    double nonFoodMarkup = scanner.nextDouble();
+    double nonFoodMarkup = Double.parseDouble(scanner.nextLine());
     System.out.println("Vuvedete dnite, ot koito zavisi nachaloto na promociqta predi iztichane na srok na godnost (ex. 7):");
-    int expiryDiscountDays = scanner.nextInt();
+    int expiryDiscountDays = Integer.parseInt(scanner.nextLine());
     System.out.println("Vuvedete promociqta, koqto shte bude nachislena na produkt, koito nablijava kraqt na srok na godnost (ex. 0.1):");
-    double expiryDiscount = scanner.nextDouble();
+    double expiryDiscount = Double.parseDouble(scanner.nextLine());
     Store store = new Store(foodMarkup,nonFoodMarkup, expiryDiscountDays, expiryDiscount);
 
     System.out.println("-=-=-=-=-=-= Dobavqne na produkti =-=-=-=-=-=-");
     int i = 1;
     while(true) {
-        scanner.nextLine();
         System.out.println("Vuvedete imeto na produkt (ex. banan):");
         String name = scanner.nextLine();
         System.out.println("Vuvedete cenata na edin broi ot produktite (ex. 0.5):");
-        double deliveryPrice = scanner.nextDouble();
+        double deliveryPrice = Double.parseDouble(scanner.nextLine());
         System.out.println("Vuvedete sled kolko dni produktut shte ima iztekul srok na godnost (ex. 365):");
-        int expiry = scanner.nextInt();
+        int expiry = Integer.parseInt(scanner.nextLine());
         System.out.println("Vuvedete kolichestvoto produkt (ex. 50):");
-        int quantity = scanner.nextInt();
+        int quantity = Integer.parseInt(scanner.nextLine());
         
         store.addItem(new FoodItem(i, name, deliveryPrice, LocalDate.now().plusDays(expiry), quantity));
         
-        scanner.nextLine();
         System.out.println("Iskate li da dobavite oshte produkti? (da/ne)");
         String maybeContinue = scanner.nextLine();
-        if(maybeContinue.equals("ne")) break;
+        if(maybeContinue.equals("ne")) {
+            break;
+        } else continue;
     }
     
     System.out.println("-=-=-=-=-=-= Dobavqne na kasi =-=-=-=-=-=-");
     System.out.println("Kolko kasi iskate da dobavite? (ex. 5)");
-    int registers = scanner.nextInt();
+    int registers = Integer.parseInt(scanner.nextLine());
     for(int j = 1; j <= registers; j++){
         store.addCashRegister(new CashRegister(j));
     }
     
     System.out.println("-=-=-=-=-=-= Dobavqne na kasieri =-=-=-=-=-=-");
     for (int k = 1; k <= registers; k++) {
-        scanner.nextLine();
         System.out.println("Vuvedete imeto na kasiera na kasa " + k + " (ex. Petur)");
         String cashierName = scanner.nextLine();
         System.out.println("Vuvedete zaplatata na " + cashierName + " (ex. 1750)");
-        int cashierSalary = scanner.nextInt();
+        int cashierSalary = Integer.parseInt(scanner.nextLine());
         store.addCashier(new Cashier(k, cashierName, cashierSalary));
         store.assignCashierToRegister(k, k);
     }
@@ -546,16 +545,15 @@ public class Store {
     while(true) {
         Bag koshnica = new Bag();
         System.out.println("Vuvedete id-to na produkta (ex. 1):");
-        int product = scanner.nextInt();
+        int product = Integer.parseInt(scanner.nextLine());
         System.out.println("Vuvedete kolichestvoto ot produkt " + product + " koeto shte bude zakupeno (ex. 50):");
-        int quantity = scanner.nextInt();
+        int quantity = Integer.parseInt(scanner.nextLine());
         System.out.println("Vuvedete sumata, koqto kupuvacha dava (ex. 16.50):");
-        double amount = scanner.nextDouble();
+        double amount = Double.parseDouble(scanner.nextLine());
         koshnica.addItem(product, quantity);
         koshnica.setAmountPaid(amount);
         koshnici.add(koshnica);
         
-        scanner.nextLine();
         System.out.println("Iskate li da obrabotvate oshte pokupki? (da/ne)");
         String maybeContinue = scanner.nextLine();
         if(maybeContinue.equals("ne")) break;
