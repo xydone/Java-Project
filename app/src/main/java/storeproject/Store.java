@@ -9,6 +9,9 @@ import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.io.*;
 import java.util.*;
+import storeproject.exceptions.ExpiredItemException;          
+import storeproject.exceptions.InsufficientPaymentException;
+import storeproject.exceptions.InsufficientStockException;  
 
 // string templates
 class StringTemplates {
@@ -52,65 +55,6 @@ class StringTemplates {
     }
     String remainderAmount(double price){
         return genericAmount("Resto", price);
-    }
-}
-
-class InsufficientStockException extends Exception {
-    private int itemId;
-    private int requestedQuantity;
-    private int availableQuantity;
-
-    public InsufficientStockException(int itemId, int requestedQuantity, int availableQuantity) {
-        this.itemId = itemId;
-        this.requestedQuantity = requestedQuantity;
-        this.availableQuantity = availableQuantity;
-    }
-
-    public int getItemId() { return itemId; }
-    public int getRequestedQuantity() { return requestedQuantity; }
-    public int getAvailableQuantity() { return availableQuantity; }
-
-    @Override
-    public String getMessage() {
-        return "Nqma dostatuchno kolichestvo ot produkt " + itemId + ".  Ochakva se: " + requestedQuantity + ", Nalichno: " + availableQuantity;
-    }
-}
-
-class ExpiredItemException extends Exception {
-  private int itemId;
-  private LocalDate expirationDate;
-
-  public ExpiredItemException(int itemId, LocalDate expirationDate) {
-    this.itemId = itemId;
-    this.expirationDate = expirationDate;
-  }
-
-  public int getItemId() {
-    return itemId;
-  }
-
-  public LocalDate getExpirationDate() {
-    return expirationDate;
-  }
-
-  @Override
-  public String getMessage() {
-    return "Produktut " + itemId + " e sus iztekul srok na godnost. Srok na godnost: " + expirationDate;
-  }
-}
-
-class InsufficientPaymentException extends Exception {
-    private double requiredAmount;
-    private double providedAmount;
-
-    public InsufficientPaymentException(double requiredAmount, double providedAmount) {
-        this.requiredAmount = requiredAmount;
-        this.providedAmount = providedAmount;
-    }
-
-    @Override
-    public String getMessage() {
-        return "Nedostatuchna suma. Cena: " + requiredAmount + ", Predostaveno: " + providedAmount;
     }
 }
 
