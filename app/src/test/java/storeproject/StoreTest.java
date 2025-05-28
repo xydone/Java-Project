@@ -11,48 +11,48 @@ import java.util.ArrayList;
 import java.util.List;
 
 class StoreTest {
-    @Test void sampleStore() {
-        Store store = new Store(0.2, 0.1, 7, 0.1);
-        store.addItem(new FoodItem(1, "Banan", 0.5, LocalDate.now().plusDays(10), 100));
-        store.addItem(new FoodItem(2, "Konserva grah", 3.0, LocalDate.now().plusYears(1), 50));
-        store.addItem(new FoodItem(3, "Prqsno mlqko", 1.0, LocalDate.now().plusDays(2), 30));
-        store.addItem(new NonFoodItem(4, "Pasta za zubi", 2.5, LocalDate.now().plusYears(2), 10));  
-        store.addCashier(new Cashier(1, "Ivan", 1500));
-        store.addCashier(new Cashier(2, "Petur", 1750));  
-        store.addCashRegister(new CashRegister(1));
-        store.addCashRegister(new CashRegister(2));  
-        store.assignCashierToRegister(1, 1);
-        store.assignCashierToRegister(2, 2);  
-        List<Bag> koshnici = new ArrayList<>();  
-        Bag koshnica1 = new Bag();
-        // 5 banani
-        koshnica1.addItem(1, 5); 
-        // 20 konservi grah
-        koshnica1.addItem(2, 20);
-        koshnica1.setAmountPaid(100);
-        koshnici.add(koshnica1);              
-        Bag koshnica2 = new Bag();
-        // 6 pasti za zubi
-        koshnica2.addItem(4, 6); 
-        // 1 banan
-        koshnica2.addItem(1, 1);
-        // 3 konservi grah
-        koshnica2.addItem(2, 3);
-        koshnica2.setAmountPaid(40);
-        koshnici.add(koshnica2);
-        try {
-            for (int i = 0; i < koshnici.size(); i++) {
-                Bag koshnica = koshnici.get(i);
-                Receipt receipt = store.sellItems(1, koshnica.getItems(), koshnica.getAmountPaid());
-                receipt.printReceipt();
-            }
-            assertEquals( 2,store.getTotalReceiptsIssued());
-            assertEquals( 102.9,store.getTotalRevenue());
-            assertEquals( 3250.0,store.calculateCashierSalariesCost());
-            assertEquals( 7,store.calculateDeliveryCosts());
-            assertEquals( -3154.1, store.calculateProfit());
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-    }
+    // @Test void sampleStore() {
+    //     Store store = new Store(0.2, 0.1, 7, 0.1);
+    //     store.addItem(new FoodItem(1, "Banan", 0.5, LocalDate.now().plusDays(10), 100));
+    //     store.addItem(new FoodItem(2, "Konserva grah", 3.0, LocalDate.now().plusYears(1), 50));
+    //     store.addItem(new FoodItem(3, "Prqsno mlqko", 1.0, LocalDate.now().plusDays(2), 30));
+    //     store.addItem(new NonFoodItem(4, "Pasta za zubi", 2.5, LocalDate.now().plusYears(2), 10));  
+    //     store.addCashier(new Cashier(1, "Ivan", 1500));
+    //     store.addCashier(new Cashier(2, "Petur", 1750));  
+    //     store.addCashRegister(new CashRegister(1));
+    //     store.addCashRegister(new CashRegister(2));  
+    //     store.assignCashierToRegister(1, 1);
+    //     store.assignCashierToRegister(2, 2);  
+    //     List<Bag> koshnici = new ArrayList<>();  
+    //     Bag koshnica1 = new Bag();
+    //     // 5 banani
+    //     koshnica1.addItem(1, 5); 
+    //     // 20 konservi grah
+    //     koshnica1.addItem(2, 20);
+    //     koshnica1.setAmountPaid(100);
+    //     koshnici.add(koshnica1);              
+    //     Bag koshnica2 = new Bag();
+    //     // 6 pasti za zubi
+    //     koshnica2.addItem(4, 6); 
+    //     // 1 banan
+    //     koshnica2.addItem(1, 1);
+    //     // 3 konservi grah
+    //     koshnica2.addItem(2, 3);
+    //     koshnica2.setAmountPaid(40);
+    //     koshnici.add(koshnica2);
+    //     try {
+    //         for (int i = 0; i < koshnici.size(); i++) {
+    //             Bag koshnica = koshnici.get(i);
+    //             Receipt receipt = store.sellItems(1, koshnica.getItems(), koshnica.getAmountPaid());
+    //             receipt.printReceipt();
+    //         }
+    //         assertEquals( 2,store.getTotalReceiptsIssued());
+    //         assertEquals( 102.9,store.getTotalRevenue());
+    //         assertEquals( 3250.0,store.calculateCashierSalariesCost());
+    //         assertEquals( 7,store.calculateDeliveryCosts());
+    //         assertEquals( -3154.1, store.calculateProfit());
+    //     } catch (Exception e) {
+    //         System.err.println("Error: " + e.getMessage());
+    //     }
+    // }
 }

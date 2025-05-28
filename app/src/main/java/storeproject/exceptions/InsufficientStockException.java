@@ -11,12 +11,21 @@ public class InsufficientStockException extends Exception {
         this.availableQuantity = availableQuantity;
     }
 
-    public int getItemId() { return itemId; }
-    public int getRequestedQuantity() { return requestedQuantity; }
-    public int getAvailableQuantity() { return availableQuantity; }
+    public int getItemId() {
+        return itemId;
+    }
+
+    public int getRequestedQuantity() {
+        return requestedQuantity;
+    }
+
+    public int getAvailableQuantity() {
+        return availableQuantity;
+    }
 
     @Override
     public String getMessage() {
-        return "Nqma dostatuchno kolichestvo ot produkt " + itemId + ".  Ochakva se: " + requestedQuantity + ", Nalichno: " + availableQuantity;
+        return "Nqma dostatuchno kolichestvo ot produkt " + itemId + ".  Ochakva se: " + requestedQuantity
+                + ", Nalichno: " + availableQuantity;
     }
 }

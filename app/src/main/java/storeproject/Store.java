@@ -5,270 +5,22 @@ package storeproject;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
-import java.io.*;
-import java.util.*;
-import storeproject.exceptions.ExpiredItemException;          
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.InputMismatchException;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import storeproject.exceptions.CashierNotFoundException;
+import storeproject.exceptions.CashRegisterNotFoundException;
+import storeproject.exceptions.ExpiredItemException;
 import storeproject.exceptions.InsufficientPaymentException;
-import storeproject.exceptions.InsufficientStockException;  
-
-// string templates
-class StringTemplates {
-  String receiptID(int serialNumber) {
-      return "Nomer na kasova belejka: " + serialNumber;
-  }
-  String cashierName(String name) {
-      return "Kasier: " + name;
-  }
-  String issuedAt(LocalDateTime dateTime) {
-      return "Izdadena na: " + dateTime;
-  }
-  String items(List<ReceiptItem> items) {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < items.size(); i++) {
-        ReceiptItem item = items.get(i);
-        sb.append(item.getItem().getName())
-          .append(" x ")
-          .append(item.getQuantity())
-          .append(" @ $")
-          .append(String.format("%.2f", item.getPrice()))
-          .append(" = $")
-          .append(String.format("%.2f", item.getPrice() * item.getQuantity()));
-          if (i < items.size() - 1) { 
-            sb.append("\n"); 
-        }
-    };
-    return sb.toString();
-    }
-    String newline() {
-        return "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-";
-    }
-    String genericAmount(String priceLabel,double price) {
-        return priceLabel + ": $"  + String.format("%.2f",price);
-    }
-    String totalAmount(double price){
-        return genericAmount("Obshto", price);
-    }
-    String paidAmount(double price){
-        return genericAmount("Plateno", price);
-    }
-    String remainderAmount(double price){
-        return genericAmount("Resto", price);
-    }
-}
-
-abstract class Item implements Serializable {
-    private int id;
-    private String name;
-    private double unitRawPrice;
-    private LocalDate expirationDate;
-    private int quantity;
-
-    public Item(int id, String name, double unitRawPrice, LocalDate expirationDate, int quantity) {
-        this.id = id;
-        this.name = name;
-        this.unitRawPrice = unitRawPrice;
-        this.expirationDate = expirationDate;
-        this.quantity = quantity;
-    }
-
-    public int getId() { return id; }
-    public String getName() { return name; }
-    public double getUnitRawPrice() { return unitRawPrice; }
-    public LocalDate getExpirationDate() { return expirationDate; }
-    public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
-
-    public abstract double calculateSellingPrice(Store store);
-}
-
-class FoodItem extends Item {
-    public FoodItem(int id, String name, double unitDeliveryPrice, LocalDate expirationDate, int quantity) {
-        super(id, name, unitDeliveryPrice, expirationDate, quantity);
-    }
-
-    @Override
-    public double calculateSellingPrice(Store store) {
-        double markupPercentage = store.getFoodMarkupPercentage();
-        double sellingPrice = getUnitRawPrice() * (1 + markupPercentage);
-
-        long daysUntilExpiration = ChronoUnit.DAYS.between(LocalDate.now(), getExpirationDate());
-        if (daysUntilExpiration < store.getDaysUntilExpirationForDiscount()) {
-            sellingPrice = sellingPrice * (1 - store.getExpirationDiscountPercentage());
-        }
-
-        return sellingPrice;
-    }
-}
-
-class NonFoodItem extends Item {
-    public NonFoodItem(int id, String name, double unitDeliveryPrice, LocalDate expirationDate, int quantity) {
-        super(id, name, unitDeliveryPrice, expirationDate, quantity);
-    }
-
-    @Override
-    public double calculateSellingPrice(Store store) {
-        double markupPercentage = store.getNonFoodMarkupPercentage();
-        double sellingPrice = getUnitRawPrice() * (1 + markupPercentage);
-
-        long daysUntilExpiration = ChronoUnit.DAYS.between(LocalDate.now(), getExpirationDate());
-        if (daysUntilExpiration < store.getDaysUntilExpirationForDiscount()) {
-            sellingPrice = sellingPrice * (1 - store.getExpirationDiscountPercentage());
-        }
-
-        return sellingPrice;
-    }
-}
-
-class Cashier implements Serializable {
-    private int id;
-    private String name;
-    private double monthlySalary;
-
-    public Cashier(int id, String name, double monthlySalary) {
-        this.id = id;
-        this.name = name;
-        this.monthlySalary = monthlySalary;
-    }
-
-    public int getId() { return id; }
-    public String getName() { return name; }
-    public double getMonthlySalary() { return monthlySalary; }
-}
-
-class CashRegister implements Serializable {
-    private int id;
-    private Cashier cashier;
-
-    public CashRegister(int id) {
-        this.id = id;
-        this.cashier = null;
-    }
-
-    public int getId() { return id; }
-    public Cashier getCashier() { return cashier; }
-
-    public void assignCashier(Cashier cashier) {
-        this.cashier = cashier;
-    }
-
-    public void removeCashier() {
-        this.cashier = null;
-    }
-}
-
-class Receipt implements Serializable {
-    private int serialNumber;
-    private Cashier cashier;
-    private LocalDateTime dateTime;
-    private List<ReceiptItem> items;
-    private double totalValue;
-    private double moneyProvided;
-
-    public Receipt(int serialNumber, Cashier cashier, LocalDateTime dateTime, double moneyProvided) {
-        this.serialNumber = serialNumber;
-        this.cashier = cashier;
-        this.dateTime = dateTime;
-        this.items = new ArrayList<>();
-        this.totalValue = 0.0;
-        this.moneyProvided = moneyProvided;
-    }
-
-    public int getSerialNumber() { return serialNumber; }
-    public Cashier getCashier() { return cashier; }
-    public LocalDateTime getDateTime() { return dateTime; }
-    public List<ReceiptItem> getItems() { return items; }
-    public double getTotalValue() { return totalValue; }
-    public double getMoneyProvided() { return moneyProvided; }
-
-    public void addItem(ReceiptItem item) {
-        this.items.add(item);
-        this.totalValue += item.getPrice() * item.getQuantity();
-    }
- 
-    public void printReceipt() {
-      StringTemplates templates = new StringTemplates();
-      System.out.println(templates.receiptID(serialNumber));
-      System.out.println(templates.cashierName(cashier.getName()));
-      System.out.println(templates.issuedAt(dateTime));
-      System.out.println(templates.newline());
-      System.out.println(templates.items(items));
-      System.out.println(templates.newline());
-      System.out.println(templates.totalAmount(totalValue));
-      System.out.println(templates.paidAmount(moneyProvided));
-      System.out.println(templates.remainderAmount(moneyProvided - totalValue));
-    }
-
-
-    public void serializeToFile(String filename) throws IOException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filename))) {
-            oos.writeObject(this);
-        }
-    }
-
-    public static Receipt deserializeFromFile(String filename) throws IOException, ClassNotFoundException {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filename))) {
-            return (Receipt) ois.readObject();
-        }
-    }
-
-    public String toFileString() {
-      StringBuilder sb = new StringBuilder();
-      
-      StringTemplates templates = new StringTemplates();
-      sb.append(templates.receiptID(serialNumber)).append("\n");
-      sb.append(templates.cashierName(cashier.getName())).append("\n");
-      sb.append(templates.issuedAt(dateTime)).append("\n");
-      sb.append(templates.newline()).append("\n");
-      sb.append(templates.items(items)).append("\n");
-      sb.append(templates.newline()).append("\n");
-      sb.append(templates.totalAmount(totalValue)).append("\n");
-      sb.append(templates.paidAmount(moneyProvided)).append("\n");
-      sb.append(templates.remainderAmount(moneyProvided - totalValue)).append("\n");
-      return sb.toString();
-    }
-}
-
-class ReceiptItem implements Serializable {
-    private Item item;
-    private int quantity;
-    private double price;
-
-    public ReceiptItem(Item item, int quantity, double price) {
-        this.item = item;
-        this.quantity = quantity;
-        this.price = price;
-    }
-
-    public Item getItem() { return item; }
-    public int getQuantity() { return quantity; }
-    public double getPrice() { return price; }
-}
-
-class Bag {
-    private Map<Integer, Integer> items = new HashMap<>();
-    private double amountPaid;
-
-    public Bag() {}
-
-    public void addItem(int productId, int quantity) {
-        items.put(productId, quantity);
-    }
-
-    public void setAmountPaid(double amount) {
-        this.amountPaid = amount;
-    }
-
-    public double getAmountPaid() {
-        return amountPaid;
-    }
-
-    public Map<Integer, Integer> getItems() {
-        return items;
-    }
-
-}
+import storeproject.exceptions.InsufficientStockException;
+import storeproject.exceptions.NoCashierAssignedException;
+import storeproject.exceptions.ReceiptFileWriteException;
 
 public class Store {
     private double foodMarkupPercentage;
@@ -281,7 +33,8 @@ public class Store {
     private List<Receipt> receipts;
     private int receiptCounter;
 
-    public Store(double foodMarkupPercentage, double nonFoodMarkupPercentage, int daysUntilExpirationForDiscount, double expirationDiscountPercentage) {
+    public Store(double foodMarkupPercentage, double nonFoodMarkupPercentage, int daysUntilExpirationForDiscount,
+            double expirationDiscountPercentage) {
         this.foodMarkupPercentage = foodMarkupPercentage;
         this.nonFoodMarkupPercentage = nonFoodMarkupPercentage;
         this.daysUntilExpirationForDiscount = daysUntilExpirationForDiscount;
@@ -293,11 +46,21 @@ public class Store {
         this.receiptCounter = 0;
     }
 
-    public double getFoodMarkupPercentage() { return foodMarkupPercentage; }
-    public double getNonFoodMarkupPercentage() { return nonFoodMarkupPercentage; }
-    public int getDaysUntilExpirationForDiscount() { return daysUntilExpirationForDiscount; }
-    public double getExpirationDiscountPercentage() { return expirationDiscountPercentage; }
+    public double getFoodMarkupPercentage() {
+        return foodMarkupPercentage;
+    }
 
+    public double getNonFoodMarkupPercentage() {
+        return nonFoodMarkupPercentage;
+    }
+
+    public int getDaysUntilExpirationForDiscount() {
+        return daysUntilExpirationForDiscount;
+    }
+
+    public double getExpirationDiscountPercentage() {
+        return expirationDiscountPercentage;
+    }
 
     public void addItem(Item item) {
         this.items.add(item);
@@ -308,7 +71,7 @@ public class Store {
     }
 
     public Cashier getCashier(int cashierId) {
-        return cashiers.stream().filter(cashier -> cashier.getId() == cashierId).findFirst().orElse(null);
+        return this.cashiers.stream().filter(c -> c.getId() == cashierId).findFirst().orElse(null);
     }
 
     public void addCashier(Cashier cashier) {
@@ -316,102 +79,106 @@ public class Store {
     }
 
     public void removeCashier(int cashierId) {
-        this.cashiers.removeIf(cashier -> cashier.getId() == cashierId);
+        this.cashiers.removeIf(c -> c.getId() == cashierId);
     }
 
     public void addCashRegister(CashRegister cashRegister) {
         this.cashRegisters.add(cashRegister);
     }
 
-    public void assignCashierToRegister(int cashierId, int registerId) {
-        Cashier cashier = getCashier(cashierId);
-        CashRegister register = cashRegisters.stream().filter(reg -> reg.getId() == registerId).findFirst().orElse(null);
+    public void assignCashierToRegister(int cashierId, int registerId)
+            throws CashierNotFoundException, CashRegisterNotFoundException {
+        Cashier cashier = this.cashiers.stream().filter(c -> c.getId() == cashierId).findFirst().orElse(null);
+        CashRegister register = this.cashRegisters.stream().filter(r -> r.getId() == registerId).findFirst()
+                .orElse(null);
 
         if (cashier == null) {
-            throw new IllegalArgumentException("Kasier " + cashierId + " ne sushtestvuva.");
+            throw new CashierNotFoundException(cashierId);
         }
         if (register == null) {
-            throw new IllegalArgumentException("Kasa " + registerId + " ne sushtestvuva.");
+            throw new CashRegisterNotFoundException(registerId);
         }
 
         register.assignCashier(cashier);
     }
 
-    public void removeCashierFromRegister(int registerId) {
-        CashRegister register = cashRegisters.stream().filter(reg -> reg.getId() == registerId).findFirst().orElse(null);
-        if (register == null) {
-            throw new IllegalArgumentException("Kasa " + registerId + " ne sushtestvuva.");
+    public void removeCashierFromRegister(int registerId) throws CashRegisterNotFoundException {
+        CashRegister register = this.cashRegisters.stream().filter(r -> r.getId() == registerId).findFirst()
+                .orElse(null);
+        if (register != null) {
+            register.removeCashier();
+        } else {
+            throw new CashRegisterNotFoundException(registerId);
         }
-        register.removeCashier();
     }
 
-   public Receipt sellItems(int registerId, Map<Integer, Integer> itemQuantities, double customerPayment) throws InsufficientStockException, IOException, ExpiredItemException, InsufficientPaymentException {
-        CashRegister register = cashRegisters.stream().filter(reg -> reg.getId() == registerId).findFirst().orElse(null);
-
+    public Receipt sellItems(int registerId, Map<Integer, Integer> itemQuantities, double customerPayment)
+            throws InsufficientStockException, ExpiredItemException, InsufficientPaymentException,
+            CashRegisterNotFoundException, NoCashierAssignedException, ReceiptFileWriteException {
+        CashRegister register = this.cashRegisters.stream().filter(r -> r.getId() == registerId).findFirst()
+                .orElse(null);
         if (register == null) {
-            throw new IllegalArgumentException("Kasa " + registerId + " ne sushtestvuva.");
+            throw new CashRegisterNotFoundException(registerId);
+        }
+        if (register.getCashier() == null) {
+            throw new NoCashierAssignedException(registerId);
         }
 
-        Cashier cashier = register.getCashier();
-        if (cashier == null) {
-            throw new IllegalStateException("Nqma kasier na kasa " + registerId);
-        }
+        Cashier currentCashier = register.getCashier();
+        Receipt receipt = new Receipt(++receiptCounter, currentCashier, LocalDateTime.now(), customerPayment);
+        double totalCost = 0;
 
         for (Map.Entry<Integer, Integer> entry : itemQuantities.entrySet()) {
             int itemId = entry.getKey();
-            int requestedQuantity = entry.getValue();
-
-            Item item = items.stream().filter(i -> i.getId() == itemId).findFirst().orElse(null);
+            int quantitySold = entry.getValue();
+            Item item = this.items.stream().filter(i -> i.getId() == itemId).findFirst().orElse(null);
 
             if (item == null) {
-                throw new IllegalArgumentException("Produkt " + itemId + " ne e otkrit.");
+                throw new InsufficientStockException(itemId, quantitySold, 0);
             }
-
-            if (item.getQuantity() < requestedQuantity) {
-                throw new InsufficientStockException(itemId, requestedQuantity, item.getQuantity());
+            if (item.getQuantity() < quantitySold) {
+                throw new InsufficientStockException(itemId, quantitySold, item.getQuantity());
             }
-
             if (item.getExpirationDate().isBefore(LocalDate.now())) {
-              throw new ExpiredItemException(itemId, item.getExpirationDate());
+                throw new ExpiredItemException(itemId, item.getExpirationDate());
             }
+
+            double sellingPrice = item.calculateSellingPrice(this);
+            receipt.addItem(new ReceiptItem(item, quantitySold, sellingPrice));
+            totalCost += sellingPrice * quantitySold;
         }
 
-
-        receiptCounter++;
-        Receipt receipt = new Receipt(receiptCounter, cashier, LocalDateTime.now(),customerPayment);
+        if (customerPayment < totalCost) {
+            throw new InsufficientPaymentException(totalCost, customerPayment);
+        }
 
         for (Map.Entry<Integer, Integer> entry : itemQuantities.entrySet()) {
             int itemId = entry.getKey();
-            int quantityPurchased = entry.getValue();
-
-            Item item = items.stream().filter(i -> i.getId() == itemId).findFirst().orElse(null);
-            double sellingPrice = item.calculateSellingPrice(this);
-
-            ReceiptItem receiptItem = new ReceiptItem(item, quantityPurchased, sellingPrice);
-            receipt.addItem(receiptItem);
-
-            item.setQuantity(item.getQuantity() - quantityPurchased);
+            int quantitySold = entry.getValue();
+            Item item = this.items.stream().filter(i -> i.getId() == itemId).findFirst().get();
+            item.setQuantity(item.getQuantity() - quantitySold);
         }
 
-        if (customerPayment < receipt.getTotalValue()) {
-            throw new InsufficientPaymentException(receipt.getTotalValue(), customerPayment);
+        this.receipts.add(receipt);
+        String filename = "receipts/receipt_" + receipt.getSerialNumber();
+        try (PrintWriter out = new PrintWriter(new FileWriter(filename + ".txt"))) {
+            out.println(receipt.toFileString());
+        } catch (java.io.IOException e) {
+            throw new ReceiptFileWriteException(filename + ".txt", e);
         }
+        System.out.println("Kasova belejka zapazena v file " + filename + ".txt");
+        receipt.printReceipt();
 
-        receipts.add(receipt);
-
-        String filename = "receipts/receipt_" + receiptCounter + ".txt";
-       try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
-         writer.print(receipt.toFileString());
-       }
-
-        String serializedFileName = "receipts/receipt_" + receiptCounter + ".ser";
-       receipt.serializeToFile(serializedFileName);
-
+        try {
+            receipt.serializeToFile(filename + ".ser");
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+        }
         return receipt;
     }
 
     public int getTotalReceiptsIssued() {
-        return receiptCounter;
+        return receipts.size();
     }
 
     public double getTotalRevenue() {
@@ -423,110 +190,247 @@ public class Store {
     }
 
     public double calculateDeliveryCosts() {
-        return items.stream().mapToDouble(Item::getUnitRawPrice).sum();
+        return items.stream().mapToDouble(item -> item.getUnitRawPrice() * item.getQuantity()).sum() * 0.05;
     }
 
     public double calculateProfit() {
-        return getTotalRevenue() - calculateCashierSalariesCost() - calculateDeliveryCosts();
-    }
-    
-
-  public static void main(String[] args) {
-    Scanner scanner = new Scanner(System.in);
-    
-    System.out.println("-=-=-=-=-=-= Magazin =-=-=-=-=-=-");
-    System.out.println("Vuvedete nadcenkata na hranitelni produkti (ex. 0.2):");
-    double foodMarkup = Double.parseDouble(scanner.nextLine());
-    System.out.println("Vuvedete nadcenkata na ne-hranitelni produkti (ex. 0.1):");
-    double nonFoodMarkup = Double.parseDouble(scanner.nextLine());
-    System.out.println("Vuvedete dnite, ot koito zavisi nachaloto na promociqta predi iztichane na srok na godnost (ex. 7):");
-    int expiryDiscountDays = Integer.parseInt(scanner.nextLine());
-    System.out.println("Vuvedete promociqta, koqto shte bude nachislena na produkt, koito nablijava kraqt na srok na godnost (ex. 0.1):");
-    double expiryDiscount = Double.parseDouble(scanner.nextLine());
-    Store store = new Store(foodMarkup,nonFoodMarkup, expiryDiscountDays, expiryDiscount);
-
-    System.out.println("-=-=-=-=-=-= Dobavqne na produkti =-=-=-=-=-=-");
-    int i = 1;
-    while(true) {
-        System.out.println("Vuvedete imeto na produkt (ex. banan):");
-        String name = scanner.nextLine();
-        System.out.println("Vuvedete cenata na edin broi ot produktite (ex. 0.5):");
-        double deliveryPrice = Double.parseDouble(scanner.nextLine());
-        System.out.println("Vuvedete sled kolko dni produktut shte ima iztekul srok na godnost (ex. 365):");
-        int expiry = Integer.parseInt(scanner.nextLine());
-        System.out.println("Vuvedete kolichestvoto produkt (ex. 50):");
-        int quantity = Integer.parseInt(scanner.nextLine());
-        
-        store.addItem(new FoodItem(i, name, deliveryPrice, LocalDate.now().plusDays(expiry), quantity));
-        
-        System.out.println("Iskate li da dobavite oshte produkti? (da/ne)");
-        String maybeContinue = scanner.nextLine();
-        if(maybeContinue.equals("ne")) {
-            break;
-        } else continue;
-    }
-    
-    System.out.println("-=-=-=-=-=-= Dobavqne na kasi =-=-=-=-=-=-");
-    System.out.println("Kolko kasi iskate da dobavite? (ex. 5)");
-    int registers = Integer.parseInt(scanner.nextLine());
-    for(int j = 1; j <= registers; j++){
-        store.addCashRegister(new CashRegister(j));
-    }
-    
-    System.out.println("-=-=-=-=-=-= Dobavqne na kasieri =-=-=-=-=-=-");
-    for (int k = 1; k <= registers; k++) {
-        System.out.println("Vuvedete imeto na kasiera na kasa " + k + " (ex. Petur)");
-        String cashierName = scanner.nextLine();
-        System.out.println("Vuvedete zaplatata na " + cashierName + " (ex. 1750)");
-        int cashierSalary = Integer.parseInt(scanner.nextLine());
-        store.addCashier(new Cashier(k, cashierName, cashierSalary));
-        store.assignCashierToRegister(k, k);
+        double totalRevenue = getTotalRevenue();
+        double salariesCost = calculateCashierSalariesCost();
+        double deliveryCosts = calculateDeliveryCosts();
+        return totalRevenue - salariesCost - deliveryCosts;
     }
 
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        Store store = null;
 
-    System.out.println("-=-=-=-=-=-= Obrabotvane na pokupki =-=-=-=-=-=-");
-    List<Bag> koshnici = new ArrayList<>();
-    while(true) {
-        Bag koshnica = new Bag();
-        System.out.println("Vuvedete id-to na produkta (ex. 1):");
-        int product = Integer.parseInt(scanner.nextLine());
-        System.out.println("Vuvedete kolichestvoto ot produkt " + product + " koeto shte bude zakupeno (ex. 50):");
-        int quantity = Integer.parseInt(scanner.nextLine());
-        System.out.println("Vuvedete sumata, koqto kupuvacha dava (ex. 16.50):");
-        double amount = Double.parseDouble(scanner.nextLine());
-        koshnica.addItem(product, quantity);
-        koshnica.setAmountPaid(amount);
-        koshnici.add(koshnica);
-        
-        System.out.println("Iskate li da obrabotvate oshte pokupki? (da/ne)");
-        String maybeContinue = scanner.nextLine();
-        if(maybeContinue.equals("ne")) break;
-    }
+        while (true) {
+            System.out.println("1. Konfiguraciq na magazin");
+            System.out.println("2. Dobavqne na produkti");
+            System.out.println("3. Dobavqne na kasieri");
+            System.out.println("4. Dobavqne na kasi");
+            System.out.println("5. Svurzvane na kasier s kasa");
+            System.out.println("6. Prodajbi");
+            System.out.println("7. Informaciq za prodajbi");
+            System.out.println("8. exit");
 
-    try {
-        for (int h = 0; h < koshnici.size(); h++) {
-            Bag koshnica = koshnici.get(h);
-            Receipt receipt = store.sellItems(1, koshnica.getItems(), koshnica.getAmountPaid());
-            receipt.printReceipt();
+            int choice = -1;
+            try {
+                if (scanner.hasNextInt()) {
+                    choice = scanner.nextInt();
+                } else {
+                    System.out.println("Izbora trqbva da bude chislo.");
+                    scanner.next();
+                    continue;
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("Izbora trqbva da bude chislo.");
+                scanner.nextLine();
+                continue;
+            } finally {
+                if (scanner.hasNextLine()) {
+                    scanner.nextLine();
+                }
+            }
+
+            if (choice == 1) {
+                System.out.println("--- Konfiguraciq na magazin ---");
+                try {
+                    System.out.print("Vuvedete nadcenka na hranitelni produkti (e.x. 0.2): ");
+                    double foodMarkup = scanner.nextDouble();
+                    System.out.print("Vuvedete nadcenka na ne-hranitelni produkti (e.x. 0.3): ");
+                    double nonFoodMarkup = scanner.nextDouble();
+                    System.out.print(
+                            "Vuvedete kolko dni trqbva da ostavat ot godnosta na edin produkt, za da bude namalen: ");
+                    int daysForDiscount = scanner.nextInt();
+                    System.out.print(
+                            "Vuvedete procenta na namalenie, kogato produkt nablijava srok na godnost (e.x. 0.1): ");
+                    double discountPercentage = scanner.nextDouble();
+                    scanner.nextLine();
+                    store = new Store(foodMarkup, nonFoodMarkup, daysForDiscount, discountPercentage);
+                    System.out.println("Konfiguraciqta na magazina e uspeshna!");
+                } catch (InputMismatchException e) {
+                    // ostaveno za debugging, ne bi trqbvalo da se sreshta, tui kato chestite
+                    // greshki sa pokriti ot ostanalite catch blockove
+                    System.err.println(e.getMessage());
+                    scanner.nextLine();
+                }
+            } else if (choice >= 2 && choice <= 7 && store == null) {
+                System.out.println("Ne e zadadena konfiguraciq na magazina. Izberete opciq 1.");
+                continue;
+            } else if (choice == 2) {
+                System.out.println("--- Dobavqne na produkt ---");
+                while (true) {
+                    try {
+                        System.out.print(
+                                "Vuvedete tipa na produkta (food/nonfood, ili ako iskate da prikluchite, 'next'): ");
+                        String type = scanner.nextLine().toLowerCase();
+                        if (type.equals("next"))
+                            break;
+
+                        System.out.print("Vuvedete ID-to na produkta: ");
+                        int id = scanner.nextInt();
+                        scanner.nextLine();
+                        System.out.print("Vuvedete imeto na produkta: ");
+                        String name = scanner.nextLine();
+                        System.out.print("Vuvedete cenata na 1 broi produkt, bez nadcenka: ");
+                        double rawPrice = scanner.nextDouble();
+                        System.out.print("Vuvedete kolichestvoto: ");
+                        int quantity = scanner.nextInt();
+                        System.out.print("Srok na godnost");
+                        System.out.print("Vuvedete godinata (ex. 2025): ");
+                        int year = scanner.nextInt();
+                        System.out.print("Vuvedete meseca (ex. 10): ");
+                        int month = scanner.nextInt();
+                        System.out.print("Vuvedete denq (ex. 25): ");
+                        int day = scanner.nextInt();
+                        scanner.nextLine();
+                        LocalDate expirationDate = LocalDate.of(year, month, day);
+
+                        if (type.equals("food")) {
+                            store.addItem(new FoodItem(id, name, rawPrice, expirationDate, quantity));
+                        } else if (type.equals("nonfood")) {
+                            store.addItem(new NonFoodItem(id, name, rawPrice, expirationDate, quantity));
+                        } else {
+                            System.out.println("Tiput na produkta trqbva da bude 'food' ili 'nonfood'.");
+                            continue;
+                        }
+                        System.out.println(name + " beshe uspeshno dobaven.");
+                    } catch (InputMismatchException e) {
+                        System.out.println("Greshka pri vuvejdane na danni. Nqkoq ot dannite ne e ot pravilniqt type");
+                        scanner.nextLine();
+                    } catch (Exception e) {
+                        // ostaveno za debugging, ne bi trqbvalo da se sreshta, tui kato chestite
+                        // greshki sa pokriti ot ostanalite catch blockove
+                        System.err.println(e.getMessage());
+                    }
+                }
+            } else if (choice == 3) {
+                System.out.println("--- Dobavqne na kasier ---");
+                while (true) {
+                    try {
+                        System.out.print("Vuvedete ID-to na kasiera (ili ako iskate da prikluchite, 'next'): ");
+                        String idInput = scanner.nextLine();
+                        if (idInput.equalsIgnoreCase("next"))
+                            break;
+                        int id = Integer.parseInt(idInput);
+
+                        System.out.print("Ime: ");
+                        String name = scanner.nextLine();
+                        System.out.print("Mesechna zaplata: ");
+                        double salary = scanner.nextDouble();
+                        scanner.nextLine();
+
+                        store.addCashier(new Cashier(id, name, salary));
+                        System.out.println("Kasierut " + name + " e dobaven.");
+                    } catch (InputMismatchException e) {
+                        System.out.println("Zaplatata trqbva da e chislo.");
+                        scanner.nextLine();
+                    } catch (NumberFormatException e) {
+                        System.out.println("ID-to trqbva da e chislo ili 'next'");
+                    } catch (Exception e) {
+                        // ostaveno za debugging, ne bi trqbvalo da se sreshta, tui kato chestite
+                        // greshki sa pokriti ot ostanalite catch blockove
+                        System.err.println(e.getMessage());
+                    }
+                }
+            } else if (choice == 4) {
+                System.out.println("--- Dobavqne na kasi ---");
+                while (true) {
+                    try {
+                        System.out.print("Dobavete ID-to na kasata (ili ako iskate da prikluchite, 'next'): ");
+                        String idInput = scanner.nextLine();
+                        if (idInput.equalsIgnoreCase("next"))
+                            break;
+                        int id = Integer.parseInt(idInput);
+
+                        store.addCashRegister(new CashRegister(id));
+                        System.out.println("Uspeshno dobavqna na kasa " + id + ".");
+                    } catch (NumberFormatException e) {
+                        System.out.println("ID-to trqbva da e chislo ili 'next'");
+                    } catch (Exception e) {
+                        // ostaveno za debugging, ne bi trqbvalo da se sreshta, tui kato chestite
+                        // greshki sa pokriti ot ostanalite catch blockove
+                        System.err.println(e.getMessage());
+                    }
+                }
+            } else if (choice == 5) {
+                System.out.println("--- Svurzvane na kasier s kasa ---");
+                try {
+                    System.out.print("ID-to na kasiera: ");
+                    int cashierId = scanner.nextInt();
+                    System.out.print("ID-to na kasata: ");
+                    int registerIdVal = scanner.nextInt();
+                    scanner.nextLine();
+                    store.assignCashierToRegister(cashierId, registerIdVal);
+                    System.out.println("Kasiera e uspeshno svurzan!");
+                } catch (InputMismatchException e) {
+                    System.out.println("ID-to trqbva da e chislo.");
+                    scanner.nextLine();
+                } catch (CashierNotFoundException | CashRegisterNotFoundException e) {
+                    System.err.println("Greshka pri vruzkata kasier-kasa: " + e.getMessage());
+                } catch (Exception e) {
+                    // ostaveno za debugging, ne bi trqbvalo da se sreshta, tui kato chestite
+                    // greshki sa pokriti ot ostanalite catch blockove
+                    System.err.println(e.getMessage());
+                }
+            } else if (choice == 6) {
+                System.out.println("--- Prodajba na produkt ---");
+                Map<Integer, Integer> itemsToSell = new HashMap<>();
+                try {
+                    System.out.print("Vuvedete ID-to na kasata: ");
+                    int regId = scanner.nextInt();
+                    scanner.nextLine();
+
+                    while (true) {
+                        System.out.print("Vuvedete ID-to na produkta (ili ako iskate da prikluchite, 'next'): ");
+                        String itemIdInput = scanner.nextLine();
+                        if (itemIdInput.equalsIgnoreCase("next")) {
+                            break;
+                        }
+                        try {
+                            int itemId = Integer.parseInt(itemIdInput);
+                            System.out.print("Vuvedete kolichestvoto za produkt " + itemId + ": ");
+                            int quantity = scanner.nextInt();
+                            scanner.nextLine();
+                            itemsToSell.put(itemId, quantity);
+                        } catch (NumberFormatException e) {
+                            System.out.println("ID-to na produkta i kolichestvoto trqbva da budat chisla.");
+                        }
+                    }
+
+                    if (itemsToSell.isEmpty()) {
+                        System.out.println("Kolichkata e prazna.");
+                    } else {
+                        System.out.print("Vuvedete sumata, koqto dava kupuvacha: ");
+                        double paymentAmount = scanner.nextDouble();
+                        scanner.nextLine();
+
+                        Receipt receipt = store.sellItems(regId, itemsToSell, paymentAmount);
+                        if (receipt != null) {
+                            System.out.println("Uspeshna prodajba!");
+                        }
+                    }
+                } catch (InputMismatchException e) {
+                    System.out.println("Ne sushtestvuva.");
+                    scanner.nextLine();
+                } catch (InsufficientStockException | ExpiredItemException | InsufficientPaymentException
+                        | ReceiptFileWriteException | CashRegisterNotFoundException | NoCashierAssignedException e) {
+                    System.err.println("Sale failed: " + e.getMessage());
+                }
+            } else if (choice == 7) {
+                System.out.println("\n--- Store Report ---");
+                System.out.println("Pechalba bez razhodi: " + String.format("%.2f", store.getTotalRevenue()));
+                System.out.println("Broika kasovi belejki: " + store.getTotalReceiptsIssued());
+                System.out.println("Zaplati: " + String.format("%.2f", store.calculateCashierSalariesCost()));
+                System.out.println("Dostavki: " + String.format("%.2f", store.calculateDeliveryCosts()));
+                System.out.println("Obshto: " + String.format("%.2f", store.calculateProfit()));
+            } else if (choice == 8) {
+                break;
+            } else {
+                System.out.println("Ne sushtestvuva.");
+            }
         }
-        System.out.println("\n-=-=-=-=--=-=-= Statistika ot raboten den: =-=-=-=--=-=-=-");
-        System.out.println("Broi kasovi belejki: " + store.getTotalReceiptsIssued());
-        System.out.println("Prihodi ot prodadeni stoki: $" + store.getTotalRevenue());
-        System.out.println("Obshta mesechna zaplata na kasieri: $" + store.calculateCashierSalariesCost());
-        System.out.println("Zaplata na kasieri za denqt: $" + store.calculateCashierSalariesCost() / YearMonth.now().lengthOfMonth());
-        System.out.println("Razhodi dostavki: $" + store.calculateDeliveryCosts());
-        System.out.println("Pechalba: $" + store.calculateProfit());               
-
-        String serializedFileName = "receipts/receipt_" + store.getTotalReceiptsIssued() + ".ser";
-        Receipt deserializedReceipt = Receipt.deserializeFromFile(serializedFileName);
-        System.out.println("\n-=-=-=-=--=-=-= Deserialized: =-=-=-=--=-=-=-");
-        deserializedReceipt.printReceipt();      
-
-    } catch (Exception e) {
-        System.err.println("Error: " + e.getMessage());
+        scanner.close();
     }
-    
-    
-    scanner.close();
-}
 }
