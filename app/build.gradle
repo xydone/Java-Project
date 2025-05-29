@@ -34,7 +34,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = 'storeproject.Store'
+    mainClass = 'storeproject.service.StoreService'
 }
 
 tasks.named('run') {
