@@ -63,6 +63,15 @@ public class Store {
         this.items.add(item);
     }
 
+    public Item getItemNullable(int itemId) {
+        for (Item item : this.items) {
+            if (item.getId() == itemId) {
+                return item;
+            }
+        }
+        return null;
+    }
+
     public void removeItem(int itemId) {
         this.items.removeIf(item -> item.getId() == itemId);
     }
@@ -77,6 +86,15 @@ public class Store {
 
     public void removeCashier(int cashierId) {
         this.cashiers.removeIf(c -> c.getId() == cashierId);
+    }
+
+    public CashRegister getCashRegisterNullable(int registerId) {
+        for (CashRegister register : this.cashRegisters) {
+            if (register.getId() == registerId) {
+                return register;
+            }
+        }
+        return null;
     }
 
     public void addCashRegister(CashRegister cashRegister) {
