@@ -1,5 +1,6 @@
 package storeproject.service;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -13,6 +14,10 @@ public class FileService implements ReceiptService {
 
     public FileService(String receiptsDirectory) {
         this.receiptsDirectory = receiptsDirectory;
+        File dir = new File(receiptsDirectory);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
     }
 
     @Override
