@@ -1,4 +1,4 @@
-package storeproject.service;
+package storeproject;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -7,20 +7,16 @@ import java.util.InputMismatchException;
 import java.util.Map;
 import java.util.Scanner;
 import storeproject.exceptions.CashierNotFoundException;
-import storeproject.CashRegister;
-import storeproject.Cashier;
-import storeproject.FoodItem;
-import storeproject.NonFoodItem;
-import storeproject.Receipt;
-import storeproject.Store;
 import storeproject.exceptions.CashRegisterNotFoundException;
 import storeproject.exceptions.ExpiredItemException;
 import storeproject.exceptions.InsufficientPaymentException;
 import storeproject.exceptions.InsufficientStockException;
 import storeproject.exceptions.NoCashierAssignedException;
 import storeproject.exceptions.ReceiptFileWriteException;
+import storeproject.service.FileService;
+import storeproject.service.ReceiptService;
 
-public class StoreService {
+public class StoreApp {
     public static void main(String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
         Store store = null;
@@ -72,9 +68,7 @@ public class StoreService {
                     store = new Store(foodMarkup, nonFoodMarkup, daysForDiscount, discountPercentage, receiptService);
                     System.out.println("Konfiguraciqta na magazina e uspeshna!");
                 } catch (InputMismatchException e) {
-                    // ostaveno za debugging, ne bi trqbvalo da se sreshta, tui kato chestite
-                    // greshki sa pokriti ot ostanalite catch blockove
-                    System.err.println(e.getMessage());
+                    System.err.println("Molq, vuvedete chislo!");
                     scanner.nextLine();
                 }
             } else if (choice >= 2 && choice <= 7 && store == null) {
@@ -198,7 +192,8 @@ public class StoreService {
                 }
             } else if (choice == 6) {
                 System.out.println("\n--- Prodajba na produkt ---");
-                Map<Integer, Integer> itemsToSell = new HashMap<>();
+                Bag bag = new Bag();
+
                 try {
                     System.out.print("Vuvedete ID-to na kasata: ");
                     int regId = scanner.nextInt();
@@ -215,30 +210,47 @@ public class StoreService {
                             System.out.print("Vuvedete kolichestvoto za produkt " + itemId + ": ");
                             int quantity = scanner.nextInt();
                             scanner.nextLine();
-                            itemsToSell.put(itemId, quantity);
+                            bag.addItem(itemId, quantity);
                         } catch (NumberFormatException e) {
                             System.out.println("ID-to na produkta i kolichestvoto trqbva da budat chisla.");
                         }
                     }
 
-                    if (itemsToSell.isEmpty()) {
+                    if (bag.getItems().isEmpty()) {
                         System.out.println("Kolichkata e prazna.");
                     } else {
                         System.out.print("Vuvedete sumata, koqto dava kupuvacha: ");
                         double paymentAmount = scanner.nextDouble();
                         scanner.nextLine();
+                        bag.setAmountPaid(paymentAmount);
 
-                        Receipt receipt = store.sellItems(regId, itemsToSell, paymentAmount);
+                        Receipt receipt = store.sellItems(regId, bag.getItems(), bag.getAmountPaid());
                         if (receipt != null) {
                             System.out.println("Uspeshna prodajba!");
                         }
                     }
+
                 } catch (InputMismatchException e) {
-                    System.out.println("Ne sushtestvuva.");
+                    System.out.println("Nevaliden tip na vhodni danni!");
                     scanner.nextLine();
-                } catch (InsufficientStockException | ExpiredItemException | InsufficientPaymentException
-                        | ReceiptFileWriteException | CashRegisterNotFoundException | NoCashierAssignedException e) {
-                    System.err.println("Sale failed: " + e.getMessage());
+                } catch (InsufficientStockException e) {
+                    System.err.println("Nqma dostatuchno stoka! " + e.getMessage());
+                    scanner.nextLine();
+                } catch (ExpiredItemException e) {
+                    System.err.println("Produktut e sus iztekul srok na godnost! " + e.getMessage());
+                    scanner.nextLine();
+                } catch (InsufficientPaymentException e) {
+                    System.err.println("Nedostatuchna suma! " + e.getMessage());
+                    scanner.nextLine();
+                } catch (ReceiptFileWriteException e) {
+                    System.err.println("Ne moje da se izdade kasova belejka! " + e.getMessage());
+                    scanner.nextLine();
+                } catch (CashRegisterNotFoundException e) {
+                    System.err.println("Lipsva kasa! " + e.getMessage());
+                    scanner.nextLine();
+                } catch (NoCashierAssignedException e) {
+                    System.err.println("Lipsva kasier! " + e.getMessage());
+                    scanner.nextLine();
                 }
             } else if (choice == 7) {
                 System.out.println("\n--- Informaciq za prodajbi ---");
