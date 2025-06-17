@@ -4,19 +4,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class StringTemplates {
-    String receiptID(int serialNumber) {
+    public String receiptID(int serialNumber) {
         return "Nomer na kasova belejka: " + serialNumber;
     }
 
-    String cashierName(String name) {
+    public String cashierName(String name) {
         return "Kasier: " + name;
     }
 
-    String issuedAt(LocalDateTime dateTime) {
+    public String issuedAt(LocalDateTime dateTime) {
         return "Izdadena na: " + dateTime;
     }
 
-    String items(List<ReceiptItem> items) {
+    public String items(List<ReceiptItem> items) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < items.size(); i++) {
             ReceiptItem item = items.get(i);
@@ -35,23 +35,23 @@ public class StringTemplates {
         return sb.toString();
     }
 
-    String newline() {
+    public String newline() {
         return "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-";
     }
 
-    String genericAmount(String priceLabel, double price) {
+    public String genericAmount(String priceLabel, double price) {
         return priceLabel + ": $" + String.format("%.2f", price);
     }
 
-    String totalAmount(double price) {
+    public String totalAmount(double price) {
         return genericAmount("Obshto", price);
     }
 
-    String paidAmount(double price) {
+    public String paidAmount(double price) {
         return genericAmount("Plateno", price);
     }
 
-    String remainderAmount(double price) {
+    public String remainderAmount(double price) {
         return genericAmount("Resto", price);
     }
 }

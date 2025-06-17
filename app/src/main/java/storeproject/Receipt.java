@@ -64,31 +64,4 @@ public class Receipt implements Serializable {
         System.out.println(templates.remainderAmount(moneyProvided - totalValue));
     }
 
-    public void serializeToFile(String filename) throws IOException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filename))) {
-            oos.writeObject(this);
-        }
-    }
-
-    public static Receipt deserializeFromFile(String filename) throws IOException, ClassNotFoundException {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filename))) {
-            return (Receipt) ois.readObject();
-        }
-    }
-
-    public String toFileString() {
-        StringBuilder sb = new StringBuilder();
-
-        StringTemplates templates = new StringTemplates();
-        sb.append(templates.receiptID(serialNumber)).append("\n");
-        sb.append(templates.cashierName(cashier.getName())).append("\n");
-        sb.append(templates.issuedAt(dateTime)).append("\n");
-        sb.append(templates.newline()).append("\n");
-        sb.append(templates.items(items)).append("\n");
-        sb.append(templates.newline()).append("\n");
-        sb.append(templates.totalAmount(totalValue)).append("\n");
-        sb.append(templates.paidAmount(moneyProvided)).append("\n");
-        sb.append(templates.remainderAmount(moneyProvided - totalValue)).append("\n");
-        return sb.toString();
-    }
 }
